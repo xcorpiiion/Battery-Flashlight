@@ -1,0 +1,109 @@
+using System.Collections;
+using System.Collections.Generic;
+using UnityEngine;
+using UnityEngine.UI;
+
+public class BatteryFlashlight : MonoBehaviour {
+    [Header("Armazena a quantidade de carga que a bateria pode ter")]
+    [Range(0, 100)]
+    public int maxCarga; // armazena o maximo que a bateria pode ter
+    public float carga; // armazena a carga da bateria
+    [Space(5)]
+    [Header("Quantidade de carga gasta a cada segundo")]
+    [Range(0, 30)]
+    public float gastarCarga, time /* // controla o tempo de maneira manual */; // quantidade de carga gasta
+    private byte tempoLanterna = 2;
+    public bool ligar = false;
+    public Light lanterna;
+    public float intensidade;
+    public Image energyBar; // representação grafica da barra de energia da Flashlight
+    private float porcentagemBattery; // porcentagem da bateria
+    public AudioClip playSound;
+    private AudioSource audioS;
+
+    private FpsController fps;
+
+    // Use this for initialization
+    void Start () {
+        carga = maxCarga;
+        lanterna.intensity = intensidade;
+        fps = FindObjectOfType(typeof(FpsController)) as FpsController;
+        lanterna.enabled = ligar;
+        fps.ligarLanterna = ligar;
+        audioS = GetComponent<AudioSource>();
+    }
+	
+	// Update is called once per frame
+	void Update () {
+        if (Input.GetButtonDown("Lanterna") && carga > 0) {
+            audioS.clip = playSound;
+            audioS.Play();
+            ligar = !ligar;
+            lanterna.enabled = ligar;
+            fps.ligarLanterna = ligar;
+        }
+
+       if(carga <= maxCarga / 2) {
+            lanterna.intensity = intensidade / 2;
+        } else {
+            lanterna.intensity = intensidade;
+        }
+
+        if (ligar) {
+            usarLanterna();
+        } else {
+            lanterna.enabled = false;
+            time = 0;
+        }
+
+        // atualiza a energia da lanterna
+        updateEnergyBar();
+        
+    }
+
+
+    // controla o tempo de maneira manual
+    private void tempo() {
+        time -= Time.deltaTime;
+        
+    }
+
+    // usa a lanterna
+    private void usarLanterna() {
+        if (ligar) {
+            
+            if (time <= 0) {
+                carga -= gastarCarga;
+                time = tempoLanterna;
+            } else {
+                tempo();
+            }
+
+            if (carga < 0) {
+                carga = 0;
+                lanterna.enabled = false;
+                ligar = false;
+            }
+            
+        }
+    }
+
+    public void recarregar(float qtdCarga) {
+        carga += qtdCarga;
+        if (carga > maxCarga) {
+            carga = maxCarga;
+        }
+    }
+
+    private void updateEnergyBar() {
+        porcentagemBattery = carga / maxCarga;
+        if(porcentagemBattery > 1) {
+            porcentagemBattery = 1;
+        } else if(porcentagemBattery < 0) {
+            porcentagemBattery = 0;
+        }
+
+        energyBar.transform.localScale = new Vector3(porcentagemBattery, 1, 1);
+
+    }
+}
